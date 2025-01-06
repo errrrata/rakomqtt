@@ -218,7 +218,6 @@ class RakoCommand:
         """Create RakoCommand from MQTT message"""
         import re
         topic_patterns = {
-            'room': r'^rako/room/([0-9]+)/set$',
             'channel': r'^rako/room/([0-9]+)/channel/([0-9]+)/set$',
             'command': r'^rako/room/([0-9]+)/channel/([0-9]+)/command$'
         }
@@ -257,13 +256,13 @@ class RakoCommand:
                 room_id = int(matches['command'].group(1))
                 channel_id = int(matches['command'].group(2))
                 command_str = payload_str.strip().strip('"\'').upper()
-                
+
                 command_map = {
                     'OPEN': RakoCommandType.FADE_UP,
                     'CLOSE': RakoCommandType.FADE_DOWN,
                     'STOP': RakoCommandType.STOP
                 }
-                
+
                 if command_str in command_map:
                     return cls(
                         room_id=room_id,
@@ -275,28 +274,11 @@ class RakoCommand:
                     _LOGGER.warning(f"Unsupported cover command: {command_str}")
                     return None
 
-            elif matches['room']:  # Changed from 'scene'
-                room_id = int(matches['room'].group(1))
-                payload = mqtt_payload_schema.loads(payload_str)
-                _LOGGER.debug(f"Processing room command for room {room_id}")
-                
-                if 'state' in payload:
-                    scene = 1 if payload['state'] == 'ON' else 0
-                else:
-                    scene = cls._rako_command(payload['brightness'])
-                    
-                return cls(
-                    room_id=room_id,
-                    channel_id=0,
-                    scene=scene,
-                )
-                    
             elif matches['channel']:
                 room_id = int(matches['channel'].group(1))
                 channel_id = int(matches['channel'].group(2))
-                payload = mqtt_payload_schema.loads(payload_str)
                 _LOGGER.debug(f"Processing channel command for room {room_id} channel {channel_id}")
-                
+
                 if 'state' in payload:
                     if payload['state'] == 'ON':
                         brightness = payload.get('brightness', 255)
@@ -306,19 +288,20 @@ class RakoCommand:
                     brightness = payload['brightness']
                 else:
                     return None
-                    
+
                 return cls(
                     room_id=room_id,
                     channel_id=channel_id,
-                    brightness=brightness
+                    brightness=brightness,
+                    fade_rate=fade_rate
                 )
-                        
+
             else:
                 _LOGGER.warning(f"No matching topic pattern for: {topic}")
                 return None
-                    
+
         except Exception as e:
-            _LOGGER.error(f"Error processing MQTT message: {e}", exc_info=True)
+            _LOGGER.error(f"Error processing MQTT message: {e}")
             return None
 
     def to_udp_command(self) -> List[int]:
@@ -660,8 +643,8 @@ class RakoBridge:
 
     @staticmethod
     def create_topic(rako_status_message: RakoStatusMessage) -> str:
-        # Always use channel format for consistency, treating room commands (channel 0)
-        # the same as individual channels
+        """Create MQTT topic from status message."""
+        # Always use channel format for status updates
         return f"rako/room/{rako_status_message.room_id}/channel/{rako_status_message.channel_id}/state"
 
     @staticmethod

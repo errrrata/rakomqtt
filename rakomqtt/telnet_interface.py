@@ -69,8 +69,24 @@ class RakoTelnetInterface:
             response = await self.send_command(command)
             if response and b'OK' not in response:
                 _LOGGER.warning(f"Unexpected response for scene command: {response}")
+
+            # If this was a channel 0 command, get status for all channels in room
+            if channel == 0:
+                await self.get_room_status(room)
+
         except Exception as e:
             _LOGGER.error(f"Failed to send scene command: {e}")
+            raise
+
+    async def get_room_status(self, room: int) -> None:
+        """Get status for all channels in a room."""
+        try:
+            command = f"ROOM{room:02d},STATUS".encode()
+            response = await self.send_command(command)
+            if response and b'OK' not in response:
+                _LOGGER.warning(f"Unexpected response for room status: {response}")
+        except Exception as e:
+            _LOGGER.error(f"Failed to get room status: {e}")
             raise
 
     async def send_level_command(self, room: int, channel: int, level: int) -> None:

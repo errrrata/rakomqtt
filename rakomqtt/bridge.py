@@ -130,7 +130,6 @@ class AsyncioMQTTClient:
 
 class RakoMQTTBridge:
     MQTT_TOPICS: Final[List[Tuple[str, int]]] = [
-        ("rako/room/+/set", 1),
         ("rako/room/+/channel/+/set", 1),
         ("rako/room/+/channel/+/command", 1),  # Add subscription for cover commands
     ]
@@ -217,13 +216,6 @@ class RakoMQTTBridge:
         """Process incoming MQTT messages"""
         _LOGGER.info("Starting MQTT message processor")
 
-
-        # Modify MQTT_TOPICS to remove room-level topic
-        MQTT_TOPICS: Final[List[Tuple[str, int]]] = [
-            ("rako/room/+/channel/+/set", 1),
-            ("rako/room/+/channel/+/command", 1),
-        ]
-
         # Log all subscriptions
         for topic, qos in self.MQTT_TOPICS:
             _LOGGER.info(f"Subscribing to topic: {topic}")
@@ -271,27 +263,27 @@ class RakoMQTTBridge:
             try:
                 topic, payload = await self.udp_queue.get()
                 _LOGGER.debug(f"Publishing status update: topic={topic}, payload={payload}")
-                
-                # Remove this block that adds an additional /state suffix since the topic
-                # already includes it from RakoBridge.create_topic()
-                """
-                # Add state topic suffix for status updates
-                if '/channel/' in topic:
-                    status_topic = f"{topic}/state"
-                else:
-                    status_topic = f"{topic}/state"
-                """
-                # Use the topic directly as it already has /state
-                status_topic = topic
-                        
+
+                # Use topic directly as it already includes /state
                 await self.mqtt_client.publish(
-                    status_topic,
+                    topic,
                     json.dumps(payload),
                     qos=1,
                     retain=True
                 )
+
+                # If this is a channel state update, also update channel 0 state
+                if '/channel/' in topic and not topic.endswith('/channel/0/state'):
+                    room_id = topic.split('/')[2]
+                    channel0_topic = f"rako/room/{room_id}/channel/0/state"
+                    await self.mqtt_client.publish(
+                        channel0_topic,
+                        json.dumps(payload),
+                        qos=1,
+                        retain=True
+                    )
             except Exception as e:
-                _LOGGER.error(f"Error publishing status: {e}", exc_info=True)
+                _LOGGER.error(f"Error publishing status: {e}")
                 await asyncio.sleep(1)
 
     async def maintain_availability(self) -> None:
@@ -324,44 +316,16 @@ class RakoMQTTBridge:
         """Perform graceful shutdown of the bridge."""
         _LOGGER.info("Starting graceful shutdown")
 
-        async def publish_offline_status():
-            try:
-                await self.mqtt_client.publish(
-                    "rako/bridge/status",
-                    "offline",
-                    qos=1,
-                    retain=True
-                )
-            except Exception as e:
-                _LOGGER.error(f"Failed to publish offline status: {e}")
-
-        async def close_mqtt():
-            try:
-                await self.mqtt_client.disconnect()
-            except Exception as e:
-                _LOGGER.error(f"Failed to disconnect MQTT: {e}")
-
-        async def close_telnet():
-            if hasattr(self.rako_bridge, '_telnet') and self.rako_bridge._telnet:
-                try:
-                    await self.rako_bridge._telnet.disconnect()
-                except Exception as e:
-                    _LOGGER.error(f"Failed to close telnet connection: {e}")
-
-        # Execute shutdown tasks concurrently with timeout
+        # Set bridge status to offline
         try:
-            await asyncio.wait_for(
-                asyncio.gather(
-                    publish_offline_status(),
-                    close_mqtt(),
-                    close_telnet()
-                ),
-                timeout=3.0
+            await self.mqtt_client.publish(
+                "rako/bridge/status",
+                "offline",
+                qos=1,
+                retain=True
             )
-        except asyncio.TimeoutError:
-            _LOGGER.warning("Shutdown tasks timed out")
         except Exception as e:
-            _LOGGER.error(f"Error during shutdown tasks: {e}")
+            _LOGGER.error(f"Error publishing offline status: {e}")
 
         # Close UDP socket
         if hasattr(self, '_socket'):
@@ -370,14 +334,25 @@ class RakoMQTTBridge:
             except Exception as e:
                 _LOGGER.error(f"Error closing UDP socket: {e}")
 
+        # Disconnect MQTT
+        try:
+            await self.mqtt_client.disconnect()
+        except Exception as e:
+            _LOGGER.error(f"Error disconnecting MQTT: {e}")
+
+        # Close telnet connection if exists
+        if hasattr(self.rako_bridge, '_telnet') and self.rako_bridge._telnet:
+            try:
+                await self.rako_bridge._telnet.disconnect()
+            except Exception as e:
+                _LOGGER.error(f"Error closing telnet connection: {e}")
+
         _LOGGER.info("Shutdown completed")
 
     async def run(self) -> None:
         """Run the combined bridge"""
         _LOGGER.info("Starting RakoMQTT Bridge")
         tasks: List[asyncio.Task] = []
-        
-        loop = asyncio.get_running_loop()
 
         try:
             async with AsyncExitStack() as stack:
@@ -399,60 +374,37 @@ class RakoMQTTBridge:
                     asyncio.create_task(self.maintain_availability(), name="maintain_availability"),
                 ]
 
-                # Wait for completion or cancellation
-                try:
-                    # Add cleanup callback to tasks
-                    for task in tasks:
-                        task.add_done_callback(lambda t: _LOGGER.debug(f"Task {t.get_name()} completed"))
-                    
-                    while not loop.shutdown_flag:
-                        done, pending = await asyncio.wait(
-                            tasks, 
-                            timeout=1.0,
-                            return_when=asyncio.FIRST_COMPLETED
-                        )
-                        
-                        if done:
-                            for task in done:
-                                if task.exception():
-                                    raise task.exception()
-                            
-                            # Recreate completed tasks if not shutting down
-                            for task in done:
-                                if not loop.shutdown_flag:
-                                    name = task.get_name()
-                                    if name == "watch_rako":
-                                        tasks.append(asyncio.create_task(self.watch_rako(sock), name=name))
-                                    elif name == "process_mqtt":
-                                        tasks.append(asyncio.create_task(self.process_mqtt_messages(), name=name))
-                                    elif name == "publish_status":
-                                        tasks.append(asyncio.create_task(self.publish_status_updates(), name=name))
-                                    elif name == "maintain_availability":
-                                        tasks.append(asyncio.create_task(self.maintain_availability(), name=name))
-                        
-                        tasks = list(pending) + [t for t in tasks if not t.done()]
-                        
-                except asyncio.CancelledError:
-                    _LOGGER.info("Tasks cancelled, initiating cleanup")
-                except Exception as e:
-                    _LOGGER.error(f"Error in task loop: {e}", exc_info=True)
-                    raise
-                finally:
-                    # Cancel remaining tasks
-                    for task in tasks:
-                        if not task.done():
-                            task.cancel()
-                    
-                    # Wait briefly for tasks to clean up
-                    if tasks:
-                        await asyncio.wait(tasks, timeout=1.0)
+                # Wait for first task to complete or fail
+                done, pending = await asyncio.wait(
+                    tasks,
+                    return_when=asyncio.FIRST_COMPLETED
+                )
+
+                # Check if any task failed
+                for task in done:
+                    if task.exception():
+                        raise task.exception()
 
         except Exception as e:
             _LOGGER.error(f"Bridge crashed: {e}", exc_info=True)
             raise
         finally:
             _LOGGER.info("Starting cleanup")
-            await asyncio.shield(self.shutdown())
+            # Cancel all running tasks
+            for task in tasks:
+                if not task.done():
+                    _LOGGER.debug(f"Cancelling task: {task.get_name()}")
+                    task.cancel()
+
+            if tasks:
+                # Wait for tasks to complete with timeout
+                try:
+                    await asyncio.wait(tasks, timeout=5)
+                except asyncio.TimeoutError:
+                    _LOGGER.warning("Some tasks did not shut down cleanly")
+
+            # Perform graceful shutdown
+            await self.shutdown()
 
 async def run_bridge(
     rako_bridge_host: str,

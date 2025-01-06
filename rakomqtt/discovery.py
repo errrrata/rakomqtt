@@ -41,10 +41,10 @@ class RakoRoom:
     scenes: Dict[int, str] = field(default_factory=dict)  # scene_id -> scene_name
     channels: List[RakoChannel] = field(default_factory=list)
 
+
 class RakoDeviceType:
     """Mapping between Rako and Home Assistant device types."""
     
-    # Rako device types and their Home Assistant mappings
     MAPPINGS: Final[Dict[str, Tuple[str, Dict[str, Any]]]] = {
         "lights": ("light", {
             "schema": "json",
@@ -52,32 +52,28 @@ class RakoDeviceType:
             "state_value_template": "{{ value_json.state }}",
             "brightness_value_template": "{{ value_json.brightness }}",
             "brightness_scale": 255,
-            "state_topic": "~/state",              # Add this
-            "command_topic": "~/set",              # Change this
-            "brightness_command_topic": "~/set",    # Add this
+            "state_topic": "~/state",
+            "command_topic": "~/set",
+            "brightness_command_topic": "~/set",
             "command_template": '{"state": "{{ value }}"}',
             "brightness_command_template": '{"state": "ON", "brightness": {{ value }}}'
+        }),
+        "switch": ("switch", {
+            "schema": "json",
+            "state_value_template": "{{ value_json.state }}",
+            "command_topic": "~/set",
+            "state_topic": "~/state",
+            "payload_on": '{"state": "ON"}',
+            "payload_off": '{"state": "OFF"}',
+            # Add these values for better state handling
+            "value_template": "{{ value_json.state }}",  # Add this
+            "state_on": "ON",                           # Add this
+            "state_off": "OFF",                         # Add this
+            "optimistic": False
         }),
         "blinds": ("cover", {
             "schema": "json",
             "device_class": "blind",
-            "position_template": "{{ value_json.brightness }}",
-            "set_position_template": "{{ position }}",
-            "command_topic": "~/command",  # ~ gets replaced with base topic
-            "position_topic": "~",
-            "set_position_topic": "~/set",
-            "payload_open": "OPEN",
-            "payload_close": "CLOSE",
-            "payload_stop": "STOP",
-            "position_open": 255,
-            "position_closed": 0,
-            "state_open": "ON",
-            "state_closed": "OFF",
-            "optimistic": False
-        }),
-        "curtains": ("cover", {  # Same config as blinds
-            "schema": "json",
-            "device_class": "curtain",
             "position_template": "{{ value_json.brightness }}",
             "set_position_template": "{{ position }}",
             "command_topic": "~/command",
@@ -92,43 +88,31 @@ class RakoDeviceType:
             "state_closed": "OFF",
             "optimistic": False
         }),
-        "switch": ("switch", {
+        "slider": ("light", {
+            "schema": "json",
+            "brightness": True,
+            "state_value_template": "{{ value_json.state }}",
+            "brightness_value_template": "{{ value_json.brightness }}",
+            "brightness_scale": 255,
+            "state_topic": "~/state",
+            "command_topic": "~/set",
+            "brightness_command_topic": "~/set",
+            "command_template": '{"state": "{{ value }}"}',
+            "brightness_command_template": '{"state": "ON", "brightness": {{ value }}}'
+        }),
+        "default": ("switch", {
             "schema": "json",
             "state_value_template": "{{ value_json.state }}",
-            # Remove command_topic and state_topic - we'll add them in publish_room_config
-            "payload_on": '{"state": "ON", "brightness": 255}',
-            "payload_off": '{"state": "OFF", "brightness": 0}',
+            "command_topic": "~/set",
+            "state_topic": "~/state",
+            "payload_on": '{"state": "ON"}',
+            "payload_off": '{"state": "OFF"}',
+            # Add these values for better state handling
+            "value_template": "{{ value_json.state }}",  # Add this
+            "state_on": "ON",                           # Add this
+            "state_off": "OFF",                         # Add this
             "optimistic": False
-        }),
-        "socket": ("switch", {  # Same as switch
-            "schema": "json",
-            "state_value_template": "{{ value_json.state }}",
-            # Remove command_topic and state_topic - we'll add them in publish_room_config
-            "payload_on": '{"state": "ON", "brightness": 255}',
-            "payload_off": '{"state": "OFF", "brightness": 0}',
-            "optimistic": False
-        }),
-        "fan": ("fan", {
-            "schema": "json",
-            "state_value_template": "{{ value_json.state }}",
-            "percentage_value_template": "{{ (value_json.brightness / 255 * 100) | round(0) }}",
-            "percentage_command_template": "{{ '{\\'state\\': \\'ON\\', \\'brightness\\': ' + ((percentage / 100 * 255) | round(0)) | string + '}' }}",
-            "payload_on": '{"state": "ON", "brightness": 255}',
-            "payload_off": '{"state": "OFF", "brightness": 0}'
-        }),
-        "screen": ("cover", {
-            "schema": "json",
-            "device_class": "shade",
-            "position_template": "{{ value_json.brightness }}",
-            "set_position_template": "{{ position }}",
-            "position_open": 255,
-            "position_closed": 0,
-            "payload_open": '{"state": "ON", "brightness": 255}',
-            "payload_close": '{"state": "OFF", "brightness": 0}',
-            "payload_stop": '{"state": "OFF"}',
-            "state_open": "ON",
-            "state_closed": "OFF"
-        }),
+        })
     }
 
     @classmethod
@@ -137,13 +121,13 @@ class RakoDeviceType:
         rako_type = rako_type.lower()
         if rako_type in cls.MAPPINGS:
             return cls.MAPPINGS[rako_type]
-        # Default to light if type is unknown
-        _LOGGER.warning(f"Unknown Rako device type: {rako_type}, defaulting to light")
-        return cls.MAPPINGS["lights"]
+        # Default to switch if type is unknown
+        _LOGGER.warning(f"Unknown Rako device type: {rako_type}, defaulting to switch")
+        return cls.MAPPINGS["default"]
 
 class RakoDiscovery:
     """Handle device discovery for Rako integration."""
-    
+
     TIMEOUT: Final[int] = 5
     BASE_SCHEMA: Final[Dict[str, Any]] = {
         "availability_topic": "rako/bridge/status",
@@ -154,7 +138,6 @@ class RakoDiscovery:
     }
 
     def __init__(self, mqtt_client: Any, rako_bridge_host: str):
-        """Initialize the discovery handler."""
         self.mqtt_client = mqtt_client
         self.rako_bridge_host = rako_bridge_host
         self.device_base_info = {
@@ -164,6 +147,15 @@ class RakoDiscovery:
             "manufacturer": "Rako",
             "sw_version": "rakomqtt"
         }
+
+    async def publish_config(self, discovery_topic: str, config: Dict[str, Any]) -> None:
+        """Helper method to publish discovery config."""
+        await self.mqtt_client.publish(
+            discovery_topic,
+            json.dumps(config),
+            qos=1,
+            retain=True
+        )
 
     async def _test_bridge_connectivity(self) -> None:
         """Test connectivity to the Rako bridge."""
@@ -282,24 +274,24 @@ class RakoDiscovery:
     async def _async_publish_room_config(self, room: RakoRoom) -> None:
         """Publish discovery configuration for a room."""
         _LOGGER.debug(f"Publishing room config for room {room.id} ({room.type})")
-        try:
-            # Skip publishing room-level device - we'll only use channel 0
-            # This prevents duplicate entries
-            pass
-        except Exception as e:
-            _LOGGER.error(f"Failed to publish room config for room {room.id}: {e}")
-            raise
+        # We really do skip room-level config now
+        return
 
     async def _async_publish_channel_config(self, room: RakoRoom, channel: RakoChannel) -> None:
         """Publish discovery configuration for a specific channel."""
         try:
-            ha_type, type_config = RakoDeviceType.get_mapping(room.type)
-            unique_id = f"rako_room_{room.id}_channel_{channel.id}"
-
+            # Determine device type based on channel and room
             if channel.id == 0:
+                # For channel 0, use room type
+                device_type = room.type
                 display_name = f"{room.name} (All)"
             else:
+                # For specific channels, use channel type if not Default, otherwise use room type
+                device_type = channel.type if channel.type.lower() != "default" else room.type
                 display_name = f"{room.name} - {channel.name}"
+
+            ha_type, type_config = RakoDeviceType.get_mapping(device_type)
+            unique_id = f"rako_room_{room.id}_channel_{channel.id}"
 
             base_topic = f"rako/room/{room.id}/channel/{channel.id}"
 
@@ -314,9 +306,8 @@ class RakoDiscovery:
             config = {
                 "name": display_name,
                 "unique_id": unique_id,
-                # Change these two lines to use proper state topic
-                "state_topic": f"{base_topic}/state",  # Changed from base_topic
-                "command_topic": f"{base_topic}/set",  # Changed from command_topic
+                "state_topic": f"{base_topic}/state",
+                "command_topic": f"{base_topic}/set",
                 "device": {
                     **self.device_base_info,
                     "via_device": f"rako_room_{room.id}"
@@ -324,18 +315,14 @@ class RakoDiscovery:
                 **self.BASE_SCHEMA,
                 **processed_config
             }
-            
+
             _LOGGER.debug(f"Publishing discovery config for {display_name}:")
             _LOGGER.debug(json.dumps(config, indent=2))
-            
+
             discovery_topic = f"homeassistant/{ha_type}/{unique_id}/config"
-            await self.mqtt_client.publish(
-                discovery_topic,
-                json.dumps(config),
-                qos=1,
-                retain=True
-            )
-            _LOGGER.debug(f"Published {ha_type} channel config for {display_name}")
+            await self.publish_config(discovery_topic, config)
+            _LOGGER.debug(f"Published {ha_type} device config for {display_name}")
+
         except Exception as e:
             _LOGGER.error(f"Failed to publish channel config: {e}")
             raise
@@ -347,18 +334,18 @@ class RakoDiscovery:
         try:
             # Get bridge info first
             bridge_info = await self._async_get_bridge_info()
-            
+
             # Update device info with actual bridge version
             self.device_base_info.update({
                 "sw_version": bridge_info.version,
                 "hw_version": bridge_info.hw_status,
                 "configuration_url": f"http://{self.rako_bridge_host}"
             })
-            
+
             # Publish bridge device info
-            await self.mqtt_client.publish(
+            await self.publish_config(
                 "homeassistant/device/rako_bridge/config",
-                json.dumps({
+                {
                     "name": bridge_info.host_name,
                     "identifiers": [f"rako_bridge_{bridge_info.host_mac}"],
                     "manufacturer": "Rako",
@@ -366,9 +353,7 @@ class RakoDiscovery:
                     "sw_version": bridge_info.version,
                     "hw_version": bridge_info.hw_status,
                     "configuration_url": f"http://{self.rako_bridge_host}"
-                }),
-                qos=1,
-                retain=True
+                }
             )
 
             await self._test_bridge_connectivity()
@@ -378,15 +363,15 @@ class RakoDiscovery:
             for room in rooms:
                 _LOGGER.debug(f"Processing room: {room}")
                 try:
-                    await self._async_publish_room_config(room)
-                    # Only publish channel configs for devices that support channels
-                    if room.type.lower() in ["lights", "curtains", "blinds", "screen"]:
-                        await self._async_publish_channel_config(
-                            room, 
-                            RakoChannel(0, "All Channels", "master")
-                        )
-                        for channel in room.channels:
-                            await self._async_publish_channel_config(room, channel)
+                    # Skip room config as we're only using channel interface
+
+                    # Process all channels including channel 0
+                    await self._async_publish_channel_config(
+                        room,
+                        RakoChannel(0, "All Channels", "master")
+                    )
+                    for channel in room.channels:
+                        await self._async_publish_channel_config(room, channel)
                 except Exception as e:
                     _LOGGER.error(f"Failed to process room {room.id}: {e}")
                     continue
