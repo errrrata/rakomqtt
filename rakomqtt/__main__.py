@@ -126,26 +126,37 @@ def setup_logging(debug: bool = False) -> None:
 async def shutdown(signal: signal.Signals, loop: asyncio.AbstractEventLoop) -> None:
     """Handle shutdown gracefully."""
     _LOGGER.info(f"Received signal {signal.name}, initiating graceful shutdown...")
-    tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
-
-    # Set shutdown flag
-    loop.shutdown_flag = True
-
-    # Cancel all tasks
-    for task in tasks:
-        task.cancel()
-        _LOGGER.debug(f"Cancelling task: {task.get_name()}")
-
-    _LOGGER.info(f"Cancelling {len(tasks)} outstanding tasks")
-
-    # Wait for all tasks to complete with a timeout
-    with suppress(asyncio.CancelledError):
-        await asyncio.gather(*tasks, return_exceptions=True)
-
-    # Stop accepting new tasks
-    loop.stop()
-
-    _LOGGER.info("Shutdown complete")
+    
+    try:
+        # Set shutdown flag first
+        loop.shutdown_flag = True
+        
+        # Get all tasks except current
+        current_task = asyncio.current_task()
+        tasks = [t for t in asyncio.all_tasks() if t is not current_task]
+        
+        if tasks:
+            _LOGGER.info(f"Cancelling {len(tasks)} outstanding tasks")
+            
+            # Cancel all tasks
+            for task in tasks:
+                task.cancel()
+            
+            # Wait for tasks to complete with timeout
+            try:
+                await asyncio.wait(tasks, timeout=2.0)
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                _LOGGER.error(f"Error during task cancellation: {e}")
+        
+        # Stop accepting new tasks
+        loop.stop()
+        
+    except Exception as e:
+        _LOGGER.error(f"Error during shutdown: {e}")
+    finally:
+        _LOGGER.info("Shutdown complete")
 
 async def run() -> NoReturn | None:
     """Run the application."""
