@@ -1,33 +1,35 @@
-# Use Python 3.12 slim image as base
-FROM python:3.12-slim
+FROM ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
 
-# Set working directory
-WORKDIR /deploy
+WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libc6-dev \
-    curl \  # Add this
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+        gcc \
+        musl-dev \
+        linux-headers \
+        curl
 
-# Copy requirements and install Python dependencies
 COPY requirements.txt .
 COPY start.sh .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    chmod +x /deploy/start.sh
+RUN pip3 install --no-cache-dir -r requirements.txt && \
+    chmod +x /app/start.sh
 
 # Copy application code
 COPY ./rakomqtt ./rakomqtt/
 
 # Set environment variables
-ENV RAKO_BRIDGE_HOST=""
 ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/deploy
+ENV PYTHONPATH=/app
+
+RUN mkdir -p /data
+
+LABEL \
+    io.hass.version="0.2.0" \
+    io.hass.type="addon" \
+    io.hass.arch="armhf|armv7|aarch64|amd64|i386"
 
 # Set healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:9761 || exit 1
 
-# Run the application
-CMD ["./start.sh"]
+ENTRYPOINT ["/app/start.sh"]

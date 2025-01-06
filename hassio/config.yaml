@@ -1,7 +1,7 @@
 name: "Rako MQTT Bridge"
 version: "0.2.0"
 slug: "rako_mqtt_bridge"
-description: "Bridge between Rako lighting system and MQTT with extended feature support"
+description: "Bridge between Rako lighting system and MQTT"
 url: "https://github.com/yourusername/rakomqtt"
 arch:
   - armhf
@@ -11,9 +11,9 @@ arch:
   - i386
 startup: application
 boot: auto
-host_network: true
 services:
   - mqtt:need
+host_network: true
 init: false
 options:
   rako_bridge_host: ""
@@ -26,6 +26,6 @@ schema:
   rako_bridge_host: str?
   mqtt_host: str
   mqtt_user: str
-  mqtt_password: str
+  mqtt_password: password  # Changed from str to password type for security
   debug: bool
-  default_fade_rate: list(instant|fast|medium|slow|very_slow|extra_slow)
+  default_fade_rate: list(instant|fast|medium|slow|very_slow|extra_slow)?
