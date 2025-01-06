@@ -222,14 +222,19 @@ class RakoCommand:
             'channel': r'^rako/room/([0-9]+)/channel/([0-9]+)/set$',
             'command': r'^rako/room/([0-9]+)/channel/([0-9]+)/command$'
         }
-        
+
         matches = {
-            name: re.match(pattern, topic) 
+            name: re.match(pattern, topic)
             for name, pattern in topic_patterns.items()
         }
-        
+
         try:
-            payload = mqtt_payload_schema.loads(payload_str)
+            # If payload is a raw command string, wrap it in a dict
+            if payload_str.strip('"\'').upper() in ['OPEN', 'CLOSE', 'STOP']:
+                payload = {'command': payload_str.strip('"\'').upper()}
+            else:
+                payload = mqtt_payload_schema.loads(payload_str)
+
             # Extract transition time if provided (in seconds)
             transition = payload.get('transition')
             fade_rate = None

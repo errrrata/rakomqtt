@@ -14,6 +14,10 @@ class MqttPayloadSchema(Schema):
     @post_load
     def post_load(self, item: Dict[str, Any], many: bool, **kwargs) -> Dict[str, Any]:
         """Convert between different unit systems based on available fields."""
+        # If it's a command string, wrap it in a dict
+        if isinstance(item, str) and item in ('OPEN', 'CLOSE', 'STOP'):
+            return {'command': item}
+            
         if 'command' in item:
             return item
 
