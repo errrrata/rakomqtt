@@ -1,0 +1,22 @@
+configuration:
+  rako_bridge_host:
+    name: Rako Bridge Host
+    description: IP address or hostname of your Rako bridge (leave empty for auto-discovery)
+  mqtt_host:
+    name: MQTT Broker Host
+    description: Hostname of your MQTT broker
+  mqtt_user:
+    name: MQTT Username
+    description: Username for MQTT authentication
+  mqtt_password:
+    name: MQTT Password
+    description: Password for MQTT authentication
+  debug:
+    name: Debug Mode
+    description: Enable detailed debug logging
+  default_fade_rate:
+    name: Default Fade Rate
+    description: Default transition speed for light changes
+network:
+  9761/tcp: Rako bridge communication
+  9761/udp: Rako bridge discovery and status

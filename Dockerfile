@@ -1,39 +1,42 @@
-FROM ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
-#ARG BUILD_FROM
-#FROM $BUILD_FROM
+ARG BUILD_FROM
+FROM ${BUILD_FROM}
 
+# Set shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN \
+    apk add --no-cache \
         python3 \
+        py3-pip \
         gcc \
         musl-dev \
         linux-headers \
         curl
 
+# Copy application files
 COPY requirements.txt .
 COPY start.sh .
-RUN pip3 install --no-cache-dir -r requirements.txt && \
-    chmod +x /app/start.sh
-
-# Copy application code
 COPY ./rakomqtt ./rakomqtt/
 
+# Install Python packages
+RUN pip3 install --no-cache-dir -r requirements.txt && \
+    chmod a+x start.sh
+
 # Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+ENV \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/usr/src/app
 
-RUN mkdir -p /data
-
+# Labels
 LABEL \
-    io.hass.version="0.2.0" \
+    io.hass.name="Rako MQTT Bridge" \
+    io.hass.description="Bridge between Rako lighting system and MQTT" \
     io.hass.type="addon" \
-    io.hass.arch="armhf|armv7|aarch64|amd64|i386"
+    io.hass.version="${BUILD_VERSION}" \
+    io.hass.arch="armhf|armv7|aarch64|amd64|i386" \
+    maintainer="Bogdan Augustin Dobran <bad@nod.cc>"
 
-# Set healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:9761 || exit 1
-
-ENTRYPOINT ["/app/start.sh"]
+CMD [ "/usr/src/app/start.sh" ]

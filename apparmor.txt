@@ -1,0 +1,32 @@
+#include <tunables/global>
+
+profile rakomqtt flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+  #include <abstractions/python>
+
+  # Allow network access
+  network inet tcp,
+  network inet udp,
+
+  # Allow reading system information
+  /proc/sys/net/core/somaxconn r,
+  /sys/kernel/mm/transparent_hugepage/hpage_pmd_size r,
+
+  # Files required for operation
+  /usr/src/app/** r,
+  /usr/src/app/start.sh rix,
+  /usr/local/lib/python3.*/site-packages/** r,
+
+  # MQTT
+  /dev/tty rw,
+  /run/mosquitto rw,
+
+  # Standard output/error
+  /dev/null rw,
+  /dev/tty rw,
+  /dev/pts/** rw,
+
+  # Prevent any other file operations
+  deny /** w,
+  deny /** x,
+}
