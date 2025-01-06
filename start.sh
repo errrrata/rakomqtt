@@ -1,6 +1,14 @@
 #!/bin/bash
 set -e
 
+CONFIG_PATH=/data/options.json
+RAKO_BRIDGE_HOST="$(bashio::config 'rako_bridge_host')"
+MQTT_HOST="$(bashio::config 'mqtt-host')"
+MQTT_USER="$(bashio::config 'mqtt-user')"
+MQTT_PASSWORD="$(bashio::config 'mqtt-password')"
+DEBUG="$(bashio::config 'debug')"
+DEFAULT_FADE_RATE="$(bashio::config 'default-fade-rate')"
+
 # Improved logging function
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
