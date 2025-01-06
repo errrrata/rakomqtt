@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start the rakomqtt service
+# ==============================================================================
+
+bashio::log.info "Starting Rako MQTT Bridge..."
+exec /usr/src/app/start.sh

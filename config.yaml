@@ -9,23 +9,26 @@ arch:
   - aarch64
   - amd64
   - i386
+init: false
+hassio_api: true
+hassio_role: default
 startup: application
 boot: auto
 services:
-  - mqtt:need
+  - mqtt:want
 host_network: true
-init: false
 options:
   rako_bridge_host: ""
-  mqtt_host: "core-mosquitto"
-  mqtt_user: ""
-  mqtt_password: ""
   debug: false
   default_fade_rate: "medium"
 schema:
   rako_bridge_host: str?
   mqtt_host: str
   mqtt_user: str
-  mqtt_password: password  # Changed from str to password type for security
+  mqtt_password: password
   debug: bool
-  default_fade_rate: list(instant|fast|medium|slow|very_slow|extra_slow)?
+  default_fade_rate: list(instant|fast|medium|slow|very_slow|extra_slow)
+defaults:
+  mqtt_host: "!secret mqtt_host"
+  mqtt_user: "!secret mqtt_user"
+  mqtt_password: "!secret mqtt_password"

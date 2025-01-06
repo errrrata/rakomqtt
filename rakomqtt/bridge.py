@@ -130,7 +130,6 @@ class AsyncioMQTTClient:
 
 class RakoMQTTBridge:
     MQTT_TOPICS: Final[List[Tuple[str, int]]] = [
-        ("rako/room/+/set", 1),
         ("rako/room/+/channel/+/set", 1),
         ("rako/room/+/channel/+/command", 1),  # Add subscription for cover commands
     ]
@@ -264,27 +263,27 @@ class RakoMQTTBridge:
             try:
                 topic, payload = await self.udp_queue.get()
                 _LOGGER.debug(f"Publishing status update: topic={topic}, payload={payload}")
-                
-                # Remove this block that adds an additional /state suffix since the topic
-                # already includes it from RakoBridge.create_topic()
-                """
-                # Add state topic suffix for status updates
-                if '/channel/' in topic:
-                    status_topic = f"{topic}/state"
-                else:
-                    status_topic = f"{topic}/state"
-                """
-                # Use the topic directly as it already has /state
-                status_topic = topic
-                        
+
+                # Use topic directly as it already includes /state
                 await self.mqtt_client.publish(
-                    status_topic,
+                    topic,
                     json.dumps(payload),
                     qos=1,
                     retain=True
                 )
+
+                # If this is a channel state update, also update channel 0 state
+                if '/channel/' in topic and not topic.endswith('/channel/0/state'):
+                    room_id = topic.split('/')[2]
+                    channel0_topic = f"rako/room/{room_id}/channel/0/state"
+                    await self.mqtt_client.publish(
+                        channel0_topic,
+                        json.dumps(payload),
+                        qos=1,
+                        retain=True
+                    )
             except Exception as e:
-                _LOGGER.error(f"Error publishing status: {e}", exc_info=True)
+                _LOGGER.error(f"Error publishing status: {e}")
                 await asyncio.sleep(1)
 
     async def maintain_availability(self) -> None:
@@ -363,6 +362,9 @@ class RakoMQTTBridge:
                 await self.mqtt_client.wait_for_connection(timeout=10)
                 sock = await stack.enter_async_context(self.setup_udp_socket())
                 _LOGGER.info("MQTT connection established")
+
+                discovery = RakoDiscovery(self.mqtt_client, self.rako_bridge.host)
+                await discovery.async_publish_discovery_configs()
 
                 # Create tasks
                 tasks = [

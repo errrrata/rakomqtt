@@ -81,6 +81,19 @@ def get_args() -> AppConfig:
     )
 
     args = parser.parse_args()
+
+    if os.path.exists('/data/options.json'):
+        import json
+        with open('/data/options.json') as f:
+            options = json.load(f)
+            # Override arguments with options from Supervisor
+            args.rako_bridge_host = options.get('rako_bridge_host', args.rako_bridge_host)
+            args.mqtt_host = options.get('mqtt_host', args.mqtt_host)
+            args.mqtt_user = options.get('mqtt_user', args.mqtt_user)
+            args.mqtt_password = options.get('mqtt_password', args.mqtt_password)
+            args.debug = options.get('debug', args.debug)
+            args.default_fade_rate = options.get('default_fade_rate', args.default_fade_rate)
+
     return AppConfig(
         debug=args.debug,
         rako_bridge_host=args.rako_bridge_host,

@@ -1,13 +1,12 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bashio
 set -e
 
-CONFIG_PATH=/data/options.json
-RAKO_BRIDGE_HOST="$(bashio::config 'rako_bridge_host')"
-MQTT_HOST="$(bashio::config 'mqtt-host')"
-MQTT_USER="$(bashio::config 'mqtt-user')"
-MQTT_PASSWORD="$(bashio::config 'mqtt-password')"
-DEBUG="$(bashio::config 'debug')"
-DEFAULT_FADE_RATE="$(bashio::config 'default-fade-rate')"
+export RAKO_BRIDGE_HOST="$(bashio::config 'rako_bridge_host')"
+export MQTT_HOST="$(bashio::config 'mqtt_host')"
+export MQTT_USER="$(bashio::config 'mqtt_user')"
+export MQTT_PASSWORD="$(bashio::config 'mqtt_password')"
+export DEBUG="$(bashio::config 'debug')"
+export DEFAULT_FADE_RATE="$(bashio::config 'default_fade_rate')"
 
 # Improved logging function
 log() {
@@ -35,17 +34,6 @@ trap 'log "Received SIGTERM"; cleanup 1' TERM
 # Configure logging
 export PYTHONUNBUFFERED=1
 
-# Try to find Rako bridge if not provided
-if [ -z "$RAKO_BRIDGE_HOST" ]; then
-    log "No RAKO_BRIDGE_HOST provided, trying to discover..."
-    RAKO_BRIDGE_IP=$(python -m rakomqtt.RakoBridge)
-    if [ -z "$RAKO_BRIDGE_IP" ]; then
-        log "Failed to find Rako bridge automatically and no RAKO_BRIDGE_HOST provided"
-        exit 1
-    fi
-    RAKO_BRIDGE_HOST=$RAKO_BRIDGE_IP
-fi
-
 # Get default fade rate from environment or use default
 DEFAULT_FADE_RATE=${DEFAULT_FADE_RATE:-medium}
 
@@ -61,11 +49,12 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     log "Starting RakoMQTT bridge (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
     
     # Start the bridge with all parameters
-    python -um rakomqtt \
-        --rako-bridge-host "$RAKO_BRIDGE_HOST" \
+    python3 -um rakomqtt \
+        ${RAKO_BRIDGE_HOST:+--rako-bridge-host "${RAKO_BRIDGE_HOST}"} \
         --mqtt-host "$MQTT_HOST" \
         --mqtt-user "$MQTT_USER" \
         --mqtt-password "$MQTT_PASSWORD" \
+        ${DEBUG:+--debug} \
         --default-fade-rate "$DEFAULT_FADE_RATE" \
         "$@" &
     

@@ -10,19 +10,26 @@ class MqttPayloadSchema(Schema):
     percentage = fields.Int(validate=validate.Range(min=0, max=100))
     position = fields.Int(validate=validate.Range(min=0, max=100))
     command = fields.Str(validate=validate.OneOf(choices=('OPEN', 'CLOSE', 'STOP')))
+    transition = fields.Int(validate=validate.Range(min=0))
 
     @post_load
     def post_load(self, item: Dict[str, Any], many: bool, **kwargs) -> Dict[str, Any]:
         """Convert between different unit systems based on available fields."""
+        if isinstance(item, str) and item in ('OPEN', 'CLOSE', 'STOP'):
+            return {'command': item}
+
         if 'command' in item:
             return item
 
-        if 'percentage' in item and 'brightness' not in item:
-            item['brightness'] = int(item['percentage'] * 2.55)
-        elif 'position' in item and 'brightness' not in item:
-            item['brightness'] = int(item['position'] * 2.55)
-        elif 'brightness' not in item:
-            item['brightness'] = 255 if item['state'] == 'ON' else 0
+        # Ensure state and brightness are always consistent
+        if 'state' in item:
+            if 'brightness' not in item:  # Only set brightness if not explicitly provided
+                item['brightness'] = 255 if item['state'] == 'ON' else 0
+        elif 'brightness' in item:
+            item['state'] = 'ON' if item['brightness'] > 0 else 'OFF'
+        else:
+            item['state'] = 'OFF'
+            item['brightness'] = 0
 
         return item
 
