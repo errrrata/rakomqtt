@@ -364,6 +364,9 @@ class RakoMQTTBridge:
                 sock = await stack.enter_async_context(self.setup_udp_socket())
                 _LOGGER.info("MQTT connection established")
 
+                discovery = RakoDiscovery(self.mqtt_client, self.rako_bridge.host)
+                await discovery.async_publish_discovery_configs()
+
                 # Create tasks
                 tasks = [
                     asyncio.create_task(self.watch_rako(sock), name="watch_rako"),
