@@ -1,19 +1,34 @@
-version: "3"
+version: "3.8"
+
 services:
-  rakomqtt_commander:
+  rakomqtt_bridge:
     image: rakomqtt
     container_name: rakomqtt
     build:
       context: .
       dockerfile: Dockerfile
-    restart: always
+    restart: unless-stopped
+    environment:
+      - MQTT_HOST=${MQTT_HOST:-localhost}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+      - RAKO_BRIDGE_HOST=${RAKO_BRIDGE_HOST:-""}
+      - DEFAULT_FADE_RATE=${DEFAULT_FADE_RATE:-medium}
+      - TZ=${TZ:-UTC}
     command:
       - "./start.sh"
-      - "--mqtt-host"
-      - "127.0.0.1"
-      - "--mqtt-user"
-      - "${MOSQUITTO_HASS_USER}"
-      - "--mqtt-password"
-      - "${MOSQUITTO_HASS_PASSWORD}"
       - "--debug"
     network_mode: "host"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9761"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
