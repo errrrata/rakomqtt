@@ -165,11 +165,11 @@ class RakoBridge:
         resp = cls.poll_for_bridge_response(sock)
         if resp:
             _, (host, _) = resp
-            _LOGGER.debug(f'found rako bridge at {host}')
+            _LOGGER.debug(f'Found Rako bridge at {host}')
             return host
         else:
-            _LOGGER.error('Cannot find a rakobrige')
-            exit(1)
+            _LOGGER.error('Cannot find a Rako bridge after 3 attempts')
+            return None
 
     @classmethod
     def poll_for_bridge_response(cls, sock):
@@ -177,15 +177,16 @@ class RakoBridge:
         sock.bind(('', 0))
         i = 1
         while i <= 3:
-            _LOGGER.debug("Broadcasting to try and find rako bridge...")
+            _LOGGER.debug(f"Broadcasting attempt #{i} to find Rako bridge...")
             sock.sendto(b'D', ('255.255.255.255', cls.port))
             try:
                 resp = sock.recvfrom(256)
-                _LOGGER.debug(resp)
+                _LOGGER.debug(f"Received response: {resp}")
                 return resp
             except socket.timeout:
-                _LOGGER.debug(f"No rako bridge found on try #{i}")
+                _LOGGER.debug(f"No Rako bridge found on try #{i}")
                 i = i + 1
+        return None
 
     def post_command(self, rako_command: RakoCommand):
         if rako_command.scene is not None:
