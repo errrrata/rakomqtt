@@ -1,0 +1,31 @@
+name: "Rako MQTT Bridge"
+version: "0.2.0"
+slug: "rako_mqtt_bridge"
+description: "Bridge between Rako lighting system and MQTT with extended feature support"
+url: "https://github.com/yourusername/rakomqtt"
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+startup: application
+boot: auto
+host_network: true
+services:
+  - mqtt:need
+init: false
+options:
+  rako_bridge_host: ""
+  mqtt_host: "core-mosquitto"
+  mqtt_user: ""
+  mqtt_password: ""
+  debug: false
+  default_fade_rate: "medium"
+schema:
+  rako_bridge_host: str?
+  mqtt_host: str
+  mqtt_user: str
+  mqtt_password: str
+  debug: bool
+  default_fade_rate: list(instant|fast|medium|slow|very_slow|extra_slow)
