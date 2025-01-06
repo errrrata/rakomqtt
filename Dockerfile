@@ -1,9 +1,13 @@
 FROM ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
+#ARG BUILD_FROM
+#FROM $BUILD_FROM
+
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apk add --no-cache \
+        python3 \
         gcc \
         musl-dev \
         linux-headers \
