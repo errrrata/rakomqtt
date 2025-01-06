@@ -3,13 +3,13 @@ import paho.mqtt.client as mqtt
 
 from rakomqtt.MQTTClient import MQTTClient
 from rakomqtt.RakoBridge import RakoBridge, RakoCommand
-
+from rakomqtt.discovery import RakoDiscovery
 
 _LOGGER = logging.getLogger(__name__)
 
-
 def run_commander(rako_bridge_host, mqtt_host, mqtt_user, mqtt_password):
     rako_bridge = RakoBridge(rako_bridge_host)
+    mqttc = MQTTClient(mqtt_host, mqtt_user, mqtt_password)
 
     # The callback for when the client receives a CONNACK response from the server.
     def on_connect(client, userdata, flags, rc):
@@ -31,10 +31,12 @@ def run_commander(rako_bridge_host, mqtt_host, mqtt_user, mqtt_password):
         if rako_command:
             rako_bridge.post_command(rako_command)
 
-    mqttc = MQTTClient(mqtt_host, mqtt_user, mqtt_password)
     mqttc.mqttc.on_connect = on_connect
     mqttc.mqttc.on_message = on_message
     mqttc.connect()
+
+    # Initialize and run discovery
+    discovery = RakoDiscovery(mqttc, rako_bridge_host)
+    discovery.publish_discovery_configs()
+
     mqttc.mqttc.loop_forever()
-
-
