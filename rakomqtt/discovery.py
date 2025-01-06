@@ -283,32 +283,9 @@ class RakoDiscovery:
         """Publish discovery configuration for a room."""
         _LOGGER.debug(f"Publishing room config for room {room.id} ({room.type})")
         try:
-
-            ha_type, type_config = RakoDeviceType.get_mapping(room.type)
-            unique_id = f"rako_room_{room.id}"
-            
-            # Build topics
-            base_topic = f"rako/room/{room.id}"
-            
-            # Create config with explicit topics
-            config = {
-                "name": room.name,
-                "unique_id": unique_id,
-                "state_topic": f"{base_topic}/state",
-                "command_topic": f"{base_topic}/set",
-                "device": self.device_base_info,
-                **self.BASE_SCHEMA,
-                **type_config
-            }
-            
-            discovery_topic = f"homeassistant/{ha_type}/{unique_id}/config"
-            await self.mqtt_client.publish(
-                discovery_topic,
-                json.dumps(config),
-                qos=1,
-                retain=True
-            )
-            _LOGGER.debug(f"Published {ha_type} config for {room.name} (ID: {room.id})")
+            # Skip publishing room-level device - we'll only use channel 0
+            # This prevents duplicate entries
+            pass
         except Exception as e:
             _LOGGER.error(f"Failed to publish room config for room {room.id}: {e}")
             raise

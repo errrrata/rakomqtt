@@ -660,11 +660,9 @@ class RakoBridge:
 
     @staticmethod
     def create_topic(rako_status_message: RakoStatusMessage) -> str:
-        # Change this method to handle both room and channel level topics consistently
-        if rako_status_message.channel_id == 0:
-            return f"rako/room/{rako_status_message.room_id}/state"
-        else:
-            return f"rako/room/{rako_status_message.room_id}/channel/{rako_status_message.channel_id}/state"
+        # Always use channel format for consistency, treating room commands (channel 0)
+        # the same as individual channels
+        return f"rako/room/{rako_status_message.room_id}/channel/{rako_status_message.channel_id}/state"
 
     @staticmethod
     def create_payload(rako_status_message: RakoStatusMessage) -> Dict[str, Any]:

@@ -217,6 +217,13 @@ class RakoMQTTBridge:
         """Process incoming MQTT messages"""
         _LOGGER.info("Starting MQTT message processor")
 
+
+        # Modify MQTT_TOPICS to remove room-level topic
+        MQTT_TOPICS: Final[List[Tuple[str, int]]] = [
+            ("rako/room/+/channel/+/set", 1),
+            ("rako/room/+/channel/+/command", 1),
+        ]
+
         # Log all subscriptions
         for topic, qos in self.MQTT_TOPICS:
             _LOGGER.info(f"Subscribing to topic: {topic}")

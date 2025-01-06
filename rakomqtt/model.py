@@ -14,19 +14,20 @@ class MqttPayloadSchema(Schema):
     @post_load
     def post_load(self, item: Dict[str, Any], many: bool, **kwargs) -> Dict[str, Any]:
         """Convert between different unit systems based on available fields."""
-        # If it's a command string, wrap it in a dict
         if isinstance(item, str) and item in ('OPEN', 'CLOSE', 'STOP'):
             return {'command': item}
             
         if 'command' in item:
             return item
 
-        if 'percentage' in item and 'brightness' not in item:
-            item['brightness'] = int(item['percentage'] * 2.55)
-        elif 'position' in item and 'brightness' not in item:
-            item['brightness'] = int(item['position'] * 2.55)
-        elif 'brightness' not in item:
+        # Ensure state and brightness are always consistent
+        if 'state' in item:
             item['brightness'] = 255 if item['state'] == 'ON' else 0
+        elif 'brightness' in item:
+            item['state'] = 'ON' if item['brightness'] > 0 else 'OFF'
+        else:
+            item['state'] = 'OFF'
+            item['brightness'] = 0
 
         return item
 
