@@ -1,5 +1,5 @@
 name: "Rako MQTT Bridge"
-version: "0.2.15"
+version: "0.2.16"
 slug: "rako_mqtt_bridge"
 description: "Bridge between Rako lighting system and MQTT"
 url: "https://github.com/errrrata/rakomqtt"
@@ -9,7 +9,7 @@ arch:
   - aarch64
   - amd64
   - i386
-init: true
+init: false
 hassio_api: true
 hassio_role: default
 startup: application
