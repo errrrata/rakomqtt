@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   rakomqtt_bridge:
     image: rakomqtt

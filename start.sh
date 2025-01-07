@@ -1,17 +1,27 @@
 #!/usr/bin/with-contenv bashio
 set -e
 
-export RAKO_BRIDGE_HOST="$(bashio::config 'rako_bridge_host')"
-export MQTT_HOST="$(bashio::config 'mqtt_host')"
-export MQTT_USER="$(bashio::config 'mqtt_user')"
-export MQTT_PASSWORD="$(bashio::config 'mqtt_password')"
-export DEBUG="$(bashio::config 'debug')"
-export DEFAULT_FADE_RATE="$(bashio::config 'default_fade_rate')"
+_RAKO_BRIDGE_HOST="$(bashio::config 'rako_bridge_host')"
+_MQTT_HOST="$(bashio::config 'mqtt_host')"
+_MQTT_USER="$(bashio::config 'mqtt_user')"
+_MQTT_PASSWORD="$(bashio::config 'mqtt_password')"
+_DEBUG="$(bashio::config 'debug')"
+_DEFAULT_FADE_RATE="$(bashio::config 'default_fade_rate')"
+
+export RAKO_BRIDGE_HOST=${RAKO_BRIDGE_HOST:-$_RAKO_BRIDGE_HOST}
+export MQTT_HOST=${MQTT_HOST:-$_MQTT_HOST}
+export MQTT_USER=${MQTT_USER:-$_MQTT_USER}
+export MQTT_PASSWORD=${MQTT_PASSWORD:-$_MQTT_PASSWORD}
+export DEBUG=${DEBUG:-$_DEBUG}
+export DEFAULT_FADE_RATE=${DEFAULT_FADE_RATE:-$_DEFAULT_FADE_RATE}
 
 # Improved logging function
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
+
+log "RAKO_BRIDGE_HOST: ${RAKO_BRIDGE_HOST}"
+log "MQTT_HOST: ${MQTT_HOST}"
 
 # Function to handle cleanup on exit
 cleanup() {
@@ -45,19 +55,24 @@ MAX_RETRIES=3
 RETRY_COUNT=0
 RETRY_DELAY=5
 
+cd /usr/src/app/rakomqtt
+
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     log "Starting RakoMQTT bridge (attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
     
     # Start the bridge with all parameters
+    . /usr/src/app/rakomqtt/venv/bin/activate
+    pwd
+    ls -alh .
     python3 -um rakomqtt \
         ${RAKO_BRIDGE_HOST:+--rako-bridge-host "${RAKO_BRIDGE_HOST}"} \
         --mqtt-host "$MQTT_HOST" \
         --mqtt-user "$MQTT_USER" \
         --mqtt-password "$MQTT_PASSWORD" \
         ${DEBUG:+--debug} \
-        --default-fade-rate "$DEFAULT_FADE_RATE" \
         "$@" &
     
+#        --default-fade-rate "$DEFAULT_FADE_RATE" \
     PID=$!
     log "Bridge started with PID: $PID"
     

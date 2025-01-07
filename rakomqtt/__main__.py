@@ -2,6 +2,7 @@
 import argparse
 import logging
 import sys
+import os
 import asyncio
 from typing import NoReturn, Optional
 import signal
@@ -57,7 +58,7 @@ def get_args() -> AppConfig:
     parser.add_argument(
         "--mqtt-host",
         type=str,
-        required=True,
+        required=False,
         help="host name/ip of the mqtt server",
     )
     parser.add_argument(
