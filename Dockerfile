@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.19
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
 FROM ${BUILD_FROM}
 
 # Set workdir
@@ -19,9 +19,9 @@ COPY start.sh .
 COPY ./rakomqtt ./rakomqtt/
 
 # Install Python packages and set permissions
-RUN python3 -m venv /path/to/venv && \
-    . /path/to/venv/bin/activate && \
-    pip install --no-cache-dir -r requirements.txt
+RUN python3 -m venv /usr/src/app/rakomqtt/venv && \
+    . /usr/src/app/rakomqtt/venv/bin/activate && \
+    ./rakomqtt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 #RUN pip3 install --no-cache-dir -r requirements.txt
 RUN chmod a+x start.sh
