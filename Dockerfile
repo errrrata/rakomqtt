@@ -11,14 +11,14 @@ WORKDIR /usr/src/app
 RUN \
     apk add --no-cache \
         python3 \
+        python3-dev \
         py3-pip \
         gcc \
         musl-dev \
         linux-headers \
-        curl
-
-# Copy root filesystem
-COPY rootfs /
+        curl && \
+    python3 -m ensurepip && \
+    pip3 install --no-cache --upgrade pip setuptools wheel
 
 # Copy application files
 COPY requirements.txt .
@@ -26,9 +26,11 @@ COPY start.sh .
 COPY ./rakomqtt ./rakomqtt/
 
 # Install Python packages and set permissions
-RUN \
-    pip3 install --no-cache-dir -r requirements.txt && \
+RUN pip3 install --no-cache-dir -r requirements.txt && \
     chmod a+x start.sh
+
+# Copy root filesystem
+COPY rootfs /
 
 # Set environment variables
 ENV \
