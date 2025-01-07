@@ -16,6 +16,7 @@ RUN apk add --no-cache \
 # Copy application files
 COPY requirements.txt .
 COPY start.sh .
+COPY start.sh /init
 COPY ./rakomqtt ./rakomqtt/
 
 # Install Python packages and set permissions
@@ -25,7 +26,6 @@ RUN python3 -m venv /usr/src/app/rakomqtt/venv && \
 
 #RUN pip3 install --no-cache-dir -r requirements.txt
 RUN chmod a+x start.sh /init
-RUN ls -alh /init
 
 # Copy root filesystem
 COPY rootfs /
