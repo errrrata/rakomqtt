@@ -4,14 +4,12 @@ FROM ${BUILD_FROM}
 # Set workdir
 WORKDIR /usr/src/app
 
-# Install system dependencies
+# Install build dependencies
 RUN apk add --no-cache \
-    python3 \
-    py3-pip \
     gcc \
     musl-dev \
-    linux-headers \
-    curl
+    python3-dev \
+    linux-headers
 
 # Copy application files
 COPY requirements.txt .
@@ -19,8 +17,8 @@ COPY start.sh .
 COPY ./rakomqtt ./rakomqtt/
 
 # Install Python packages and set permissions
-RUN pip3 install --no-cache-dir -r requirements.txt
-RUN chmod a+x start.sh
+RUN pip3 install --no-cache-dir -r requirements.txt && \
+    chmod a+x start.sh
 
 # Copy root filesystem
 COPY rootfs /
