@@ -24,7 +24,8 @@ RUN python3 -m venv /usr/src/app/rakomqtt/venv && \
     ./rakomqtt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 #RUN pip3 install --no-cache-dir -r requirements.txt
-RUN chmod a+x start.sh
+RUN chmod a+x start.sh /init
+RUN ls -alh /init
 
 # Copy root filesystem
 COPY rootfs /
