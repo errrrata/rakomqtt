@@ -62,8 +62,6 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     
     # Start the bridge with all parameters
     . /usr/src/app/rakomqtt/venv/bin/activate
-    pwd
-    ls -alh .
     python3 -um rakomqtt \
         ${RAKO_BRIDGE_HOST:+--rako-bridge-host "${RAKO_BRIDGE_HOST}"} \
         --mqtt-host "$MQTT_HOST" \
