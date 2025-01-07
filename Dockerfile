@@ -1,6 +1,6 @@
-#ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
-#FROM ${BUILD_FROM}
-FROM ghcr.io/home-assistant/amd64-base:3.15
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
+FROM ${BUILD_FROM}
+#FROM ghcr.io/home-assistant/amd64-base:3.15
 
 # Set workdir
 WORKDIR /usr/src/app
@@ -44,4 +44,4 @@ ENV \
 #    io.hass.arch="armhf|armv7|aarch64|amd64|i386" \
 #    maintainer="Bogdan Augustin Dobran <bad@nod.cc>"
 
-CMD [ "/run.sh" ]
+#CMD [ "/run.sh" ]
