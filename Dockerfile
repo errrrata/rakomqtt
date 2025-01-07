@@ -41,3 +41,5 @@ LABEL \
     io.hass.version="${BUILD_VERSION}" \
     io.hass.arch="armhf|armv7|aarch64|amd64|i386" \
     maintainer="Bogdan Augustin Dobran <bad@nod.cc>"
+
+CMD ["/usr/src/app/start.sh"]
