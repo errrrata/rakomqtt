@@ -1,4 +1,4 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.19
 FROM ${BUILD_FROM}
 
 # Set shell
@@ -28,15 +28,12 @@ COPY ./rakomqtt ./rakomqtt/
 # Install Python packages and set permissions
 RUN \
     pip3 install --no-cache-dir -r requirements.txt && \
-    chmod a+x start.sh && \
-    chmod a+x /etc/services.d/rakomqtt/run && \
-    chmod a+x /etc/services.d/rakomqtt/finish
+    chmod a+x start.sh
 
 # Set environment variables
 ENV \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/usr/src/app \
-    S6_KEEP_ENV=1
+    PYTHONPATH=/usr/src/app
 
 # Labels
 LABEL \
@@ -46,6 +43,3 @@ LABEL \
     io.hass.version="${BUILD_VERSION}" \
     io.hass.arch="armhf|armv7|aarch64|amd64|i386" \
     maintainer="Bogdan Augustin Dobran <bad@nod.cc>"
-
-# This is critical - we should NOT specify CMD or ENTRYPOINT
-# The base image handles this for us
