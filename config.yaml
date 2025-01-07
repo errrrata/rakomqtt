@@ -1,5 +1,6 @@
 name: "Rako MQTT Bridge"
-version: "0.2.20"
+#image: ghcr.io/home-assistant/{arch}-base-python:3.12-alpine3.19
+version: "0.2.22"
 slug: "rako_mqtt_bridge"
 description: "Bridge between Rako lighting system and MQTT"
 url: "https://github.com/errrrata/rakomqtt"
@@ -10,13 +11,14 @@ arch:
   - amd64
   - i386
 init: false
-hassio_api: true
-hassio_role: default
-startup: services
-boot: auto
+#hassio_api: true
+#hassio_role: default
+#startup: services
+startup: application
 services:
   - mqtt:want
-apparmor: true
+#boot: auto
+#apparmor: true
 host_network: true
 options:
   rako_bridge_host: ""
