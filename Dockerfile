@@ -35,12 +35,12 @@ ENV \
     PYTHONPATH=/usr/src/app
 
 # Labels
-LABEL \
-    io.hass.name="Rako MQTT Bridge" \
-    io.hass.description="Bridge between Rako lighting system and MQTT" \
-    io.hass.type="addon" \
-    io.hass.version="${BUILD_VERSION}" \
-    io.hass.arch="armhf|armv7|aarch64|amd64|i386" \
-    maintainer="Bogdan Augustin Dobran <bad@nod.cc>"
+#LABEL \
+#    io.hass.name="Rako MQTT Bridge" \
+#    io.hass.description="Bridge between Rako lighting system and MQTT" \
+#    io.hass.type="addon" \
+#    io.hass.version="${BUILD_VERSION}" \
+#    io.hass.arch="armhf|armv7|aarch64|amd64|i386" \
+#    maintainer="Bogdan Augustin Dobran <bad@nod.cc>"
 
-CMD ["/usr/src/app/start.sh"]
+CMD [ "/run.sh" ]
