@@ -1,24 +1,15 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.19
 FROM ${BUILD_FROM}
 
-# Set shell
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
 # Set workdir
 WORKDIR /usr/src/app
 
-# Install system dependencies
-RUN \
-    apk add --no-cache \
-        python3 \
-        python3-dev \
-        py3-pip \
-        gcc \
-        musl-dev \
-        linux-headers \
-        curl && \
-    python3 -m ensurepip && \
-    pip3 install --no-cache --upgrade pip setuptools wheel
+# Install build dependencies
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    python3-dev \
+    linux-headers
 
 # Copy application files
 COPY requirements.txt .
