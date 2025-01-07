@@ -1,5 +1,5 @@
 name: "Rako MQTT Bridge"
-version: "0.2.10"
+version: "0.2.11"
 slug: "rako_mqtt_bridge"
 description: "Bridge between Rako lighting system and MQTT"
 url: "https://github.com/errrrata/rakomqtt"
