@@ -6,6 +6,8 @@ WORKDIR /usr/src/app
 
 # Install build dependencies
 RUN apk add --no-cache \
+    python3 \
+    py3-pip \
     gcc \
     musl-dev \
     python3-dev \
@@ -17,8 +19,12 @@ COPY start.sh .
 COPY ./rakomqtt ./rakomqtt/
 
 # Install Python packages and set permissions
-RUN pip3 install --no-cache-dir -r requirements.txt && \
-    chmod a+x start.sh
+RUN python3 -m venv /path/to/venv && \
+    . /path/to/venv/bin/activate && \
+    pip install --no-cache-dir -r requirements.txt
+
+#RUN pip3 install --no-cache-dir -r requirements.txt
+RUN chmod a+x start.sh
 
 # Copy root filesystem
 COPY rootfs /
