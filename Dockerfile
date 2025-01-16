@@ -1,46 +1,30 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-python:3.12-alpine3.19
-FROM ${BUILD_FROM}
-#FROM ghcr.io/home-assistant/amd64-base:3.15
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
-# Set workdir
 WORKDIR /usr/src/app
 
-# Install build dependencies
-RUN apk add --no-cache \
+RUN \
+    apk add --no-cache \
     python3 \
     py3-pip \
     gcc \
     musl-dev \
-    python3-dev \
-    linux-headers
+    linux-headers \
+    curl
 
-# Copy application files
-COPY requirements.txt .
-COPY start.sh .
-COPY ./rakomqtt ./rakomqtt/
+COPY requirements.txt /usr/src/app/
+COPY run.sh /usr/src/app/
+COPY rako_mqtt_bridge /usr/src/app/rako_mqtt_bridge/
 
-# Install Python packages and set permissions
-RUN python3 -m venv /usr/src/app/rakomqtt/venv && \
-    . /usr/src/app/rakomqtt/venv/bin/activate && \
-    ./rakomqtt/venv/bin/pip install --no-cache-dir -r requirements.txt
+RUN \
+    python3 -m venv /usr/src/app && \
+    . /usr/src/app/bin/activate && \
+    pip install --no-cache-dir -r /usr/src/app/requirements.txt
 
-RUN chmod a+x start.sh
+#RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Copy root filesystem
-COPY rootfs /
 
-# Set environment variables
-ENV \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/usr/src/app
+# Copy data for add-on
+RUN chmod a+x /usr/src/app/run.sh
 
-# Labels
-#LABEL \
-#    io.hass.name="Rako MQTT Bridge" \
-#    io.hass.description="Bridge between Rako lighting system and MQTT" \
-#    io.hass.type="addon" \
-#    io.hass.version="${BUILD_VERSION}" \
-#    io.hass.arch="armhf|armv7|aarch64|amd64|i386" \
-#    maintainer="Bogdan Augustin Dobran <bad@nod.cc>"
-
-#CMD [ "/run.sh" ]
+CMD [ "/usr/src/app/run.sh" ]
