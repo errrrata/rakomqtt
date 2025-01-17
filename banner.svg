@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 912 244">
+  <!-- Background -->
+  <rect width="912" height="244" fill="#41BDF5"/>
+  
+  <!-- Left Gateway Diamond -->
+  <g transform="translate(-100, 0)">
+    <path d="M128 48 L208 128 L128 208 L48 128 Z" 
+          fill="#ffffff" 
+          stroke="#41BDF5" 
+          stroke-width="8"
+          transform="translate(200, -6)"/>
+    
+    <!-- Bridge Connection Lines - Left Side (Rako) -->
+    <g stroke="#ffffff" stroke-width="16" stroke-linecap="round" transform="translate(200, -6)">
+      <line x1="48" y1="88" x2="88" y2="88"/>
+      <line x1="48" y1="128" x2="88" y2="128"/>
+      <line x1="48" y1="168" x2="88" y2="168"/>
+    </g>
+
+    <!-- Bridge Connection Lines - Right Side (MQTT) -->
+    <g stroke="#ffffff" stroke-width="16" stroke-linecap="round" transform="translate(200, -6)">
+      <line x1="168" y1="88" x2="208" y2="88"/>
+      <line x1="168" y1="128" x2="208" y2="128"/>
+      <line x1="168" y1="168" x2="208" y2="168"/>
+    </g>
+
+    <!-- Data Flow Arrows -->
+    <g fill="#41BDF5" transform="translate(200, -6)">
+      <!-- Left Arrow -->
+      <path d="M100 108 L120 128 L100 148 Z"/>
+      <!-- Right Arrow -->
+      <path d="M156 108 L136 128 L156 148 Z"/>
+    </g>
+  </g>
+  
+  <!-- Text Section -->
+  <g transform="translate(450, 122)" fill="#ffffff">
+    <text font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="start">
+      RAKO MQTT
+    </text>
+    <text font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="start" y="56">
+      BRIDGE
+    </text>
+  </g>
+</svg>

@@ -288,12 +288,21 @@ class RakoDiscovery:
             else:
                 # For specific channels, use channel type if not Default, otherwise use room type
                 device_type = channel.type if channel.type.lower() != "default" else room.type
-                display_name = f"{room.name} - {channel.name}"
+                display_name = f"{channel.name}"
 
             ha_type, type_config = RakoDeviceType.get_mapping(device_type)
             unique_id = f"rako_room_{room.id}_channel_{channel.id}"
 
             base_topic = f"rako/room/{room.id}/channel/{channel.id}"
+
+            room_device_info = {
+                "identifiers": [f"rako_room_{room.id}"],
+                "name": room.name,
+                "model": f"Rako {room.type}",
+                "manufacturer": "Rako",
+                "sw_version": "rakomqtt",
+                "via_device": f"rako_bridge_{self.rako_bridge_host}",  # Link to bridge as parent device
+            }
 
             # Replace ~ with actual base topic in type_config
             processed_config = {}
@@ -308,10 +317,7 @@ class RakoDiscovery:
                 "unique_id": unique_id,
                 "state_topic": f"{base_topic}/state",
                 "command_topic": f"{base_topic}/set",
-                "device": {
-                    **self.device_base_info,
-                    "via_device": f"rako_room_{room.id}"
-                },
+                "device": room_device_info,
                 **self.BASE_SCHEMA,
                 **processed_config
             }
